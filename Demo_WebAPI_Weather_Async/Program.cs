@@ -25,6 +25,7 @@ namespace Demo_WebAPI_Weather
         {
             bool quit = false;
             LocationCoordinates coordinates = new LocationCoordinates(0, 0);
+            ZipcodeCoordinates zipcode = new ZipcodeCoordinates(49685);
 
             while (!quit)
             {
@@ -33,8 +34,9 @@ namespace Demo_WebAPI_Weather
                 Console.WriteLine("Enter the number of your menu choice.");
                 Console.WriteLine();
                 Console.WriteLine("1) Set the Location");
-                Console.WriteLine("2) Display the Current Weather");
-                Console.WriteLine("3) Exit");
+                Console.WriteLine("2) Display the Current Weather (Lon/Lat)");
+                Console.WriteLine("3) Display the Current Weather (Zipcode)");
+                Console.WriteLine("4) Exit");
                 Console.WriteLine();
                 Console.Write("Enter Choice:");
                 string userMenuChoice = Console.ReadLine();
@@ -50,6 +52,10 @@ namespace Demo_WebAPI_Weather
                         break;
 
                     case "3":
+                        DisplayCurrentWeatherAsyncZipcode(zipcode);
+                        break;
+
+                    case "4":
                         quit = true;
                         break;
 
@@ -126,6 +132,7 @@ namespace Demo_WebAPI_Weather
             DisplayHeader("Set Location by Coordinates");
 
             LocationCoordinates coordinates = new LocationCoordinates();
+            ZipcodeCoordinates zipcode = new ZipcodeCoordinates();
 
             Console.Write("Enter Latitude: ");
             coordinates.Latitude = double.Parse(Console.ReadLine());
@@ -133,8 +140,12 @@ namespace Demo_WebAPI_Weather
             Console.Write("Enter longitude: ");
             coordinates.Longitude = double.Parse(Console.ReadLine());
 
+            Console.Write("Enter zipcode: ");
+            zipcode.Zipcode = int.Parse(Console.ReadLine());
+
             Console.WriteLine();
             Console.WriteLine($"Location Coordinates: ({coordinates.Latitude}, {coordinates.Longitude})");
+            Console.WriteLine($"Zipcode: ({zipcode.Zipcode})");
             Console.WriteLine();
 
             DisplayContinuePrompt();
@@ -152,7 +163,35 @@ namespace Demo_WebAPI_Weather
             sb.Append("http://api.openweathermap.org/data/2.5/weather?");
             sb.Append("&lat=" + coordinates.Latitude.ToString());
             sb.Append("&lon=" + coordinates.Longitude.ToString());
-            sb.Append("&appid=864d252afc928abff4010abe732617a1");
+            sb.Append("&appid=1f98752be741c9f40a091f4f5e848e78");
+
+            url = sb.ToString();
+
+            WeatherData currentWeather = new WeatherData();
+
+            Task<WeatherData> getCurrentWeather = HttpGetCurrentWeatherByLocationAsync(url);
+
+            //
+            // Note: The Wait() method is necessary so that the app does not proceed
+            //       to the menu before returning the weather data. If there is an issue
+            //       returning the data, the Wait() will create a deadlock in the app flow.
+            //
+            getCurrentWeather.Wait();
+
+            currentWeather = await getCurrentWeather;
+
+            return currentWeather;
+        }
+
+        static async Task<WeatherData> GetCurrentWeatherDataAsyncZipcode(ZipcodeCoordinates zipcode)
+        {
+            string url;
+
+            StringBuilder sb = new StringBuilder();
+            sb.Clear();
+            sb.Append("http://api.openweathermap.org/data/2.5/weather?");
+            sb.Append("zip=" + zipcode.Zipcode.ToString());
+            sb.Append("&appid=1f98752be741c9f40a091f4f5e848e78");
 
             url = sb.ToString();
 
@@ -198,6 +237,23 @@ namespace Demo_WebAPI_Weather
             WeatherData currentWeatherData = await GetCurrentWeatherDataAsync(coordinates);
             
             Console.WriteLine(String.Format("Temperature (Fahrenheit): {0:0.0}", ConvertToFahrenheit(currentWeatherData.Main.Temp)));
+            Console.WriteLine(String.Format($"Visibility: {currentWeatherData.Visibility}"));
+            Console.WriteLine(String.Format($"Wind: {currentWeatherData.Wind.Speed}"));
+
+            DisplayContinuePrompt();
+        }
+
+        static async Task DisplayCurrentWeatherAsyncZipcode(ZipcodeCoordinates zipcode)
+        {
+            Console.Clear();
+
+            DisplayHeader("Current Weather");
+
+            WeatherData currentWeatherData = await GetCurrentWeatherDataAsyncZipcode(zipcode);
+
+            Console.WriteLine(String.Format("Temperature (Fahrenheit): {0:0.0}", ConvertToFahrenheit(currentWeatherData.Main.Temp)));
+            Console.WriteLine(String.Format($"Visibility: {currentWeatherData.Visibility}"));
+            Console.WriteLine(String.Format($"Wind: {currentWeatherData.Wind.Speed}"));
 
             DisplayContinuePrompt();
         }

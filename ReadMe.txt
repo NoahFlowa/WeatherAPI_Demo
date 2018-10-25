@@ -1,6 +1,7 @@
 Project:        Demo_WebAPI_Weather_Async
 Author:         John E Velis
-Date Created:   11/15/2016
+Edited by:      Noah Osterhout
+Date Created:   10/25/2018
 Date Modified:
 Type:           Console
 Description:    This application uses the Web API from OpenWeatherMap to
